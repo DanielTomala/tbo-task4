@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ "main", "working**" ]
+    paths-ignore: [ "**.md" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security-tests:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t myapp:latest .
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: 'myapp:latest'
+          vuln-type: 'os,library'
+          format: 'table'
+
+      - name: Install Semgrep
+        run: |
+          sudo pip install semgrep
+
+      - name: Run Semgrep SAST
+        run: |
+          semgrep --config p/security-audit --error --json .
